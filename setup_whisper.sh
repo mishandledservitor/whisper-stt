@@ -6,6 +6,11 @@
 
 set -e
 
+# Ensure Homebrew is in PATH (macOS Intel + Apple Silicon)
+for brewdir in /usr/local/bin /opt/homebrew/bin; do
+    [[ -d "$brewdir" ]] && export PATH="$brewdir:$PATH"
+done
+
 INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$INSTALL_DIR"
 
