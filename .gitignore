@@ -1,0 +1,6 @@
+.DS_Store
+venv/
+whisper
+whisper_output*
+__pycache__/
+*.pyc
