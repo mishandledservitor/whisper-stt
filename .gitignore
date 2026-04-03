@@ -4,3 +4,11 @@ whisper
 whisper_output*
 __pycache__/
 *.pyc
+
+# Drop-folder contents (keep dirs, ignore files)
+inbox/*
+output/*
+processed/*
+!inbox/.gitkeep
+!output/.gitkeep
+!processed/.gitkeep

@@ -46,6 +46,11 @@ SUPPORTED_FORMATS = [
     "aac", "webm", "mkv", "mov", "avi", "opus",
 ]
 
+WHISPER_DIR = os.path.dirname(os.path.abspath(__file__))
+INBOX_DIR = os.path.join(WHISPER_DIR, "inbox")
+OUTPUT_DIR = os.path.join(WHISPER_DIR, "output")
+PROCESSED_DIR = os.path.join(WHISPER_DIR, "processed")
+
 # ── Utilities ───────────────────────────────────────────────────────────────
 
 def resolve_path(path):
@@ -276,6 +281,91 @@ def print_models():
     print(f"  ★ = default model ({DEFAULT_MODEL})")
     print(f"  .en models are English-only (slightly better for English)\n")
 
+# ── Inbox / batch processing ───────────────────────────────────────────────
+
+def scan_inbox():
+    """Return list of audio files in the inbox folder."""
+    os.makedirs(INBOX_DIR, exist_ok=True)
+    files = []
+    for name in sorted(os.listdir(INBOX_DIR)):
+        ext = os.path.splitext(name)[1].lower().lstrip(".")
+        if ext in SUPPORTED_FORMATS:
+            files.append(os.path.join(INBOX_DIR, name))
+    return files
+
+
+def process_inbox(model, language=None, out_format="text"):
+    """Transcribe all files in inbox/, save to output/, move originals to processed/."""
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    os.makedirs(PROCESSED_DIR, exist_ok=True)
+
+    files = scan_inbox()
+    if not files:
+        print("\n  📭 Inbox is empty — drop audio files into:")
+        print(f"     {INBOX_DIR}/\n")
+        return
+
+    ext_map = {"text": ".txt", "srt": ".srt", "vtt": ".vtt", "json": ".json"}
+    out_ext = ext_map.get(out_format, ".txt")
+
+    print(f"\n  📬 {len(files)} file(s) in inbox:\n")
+    for f in files:
+        size = os.path.getsize(f) / (1024 * 1024)
+        print(f"     • {os.path.basename(f)}  ({size:.1f} MB)")
+    print()
+
+    succeeded = 0
+    failed = 0
+
+    for i, audio_path in enumerate(files, 1):
+        basename = os.path.basename(audio_path)
+        name_no_ext = os.path.splitext(basename)[0]
+
+        print(f"\n{'═' * 50}")
+        print(f"  [{i}/{len(files)}]  {basename}")
+        print(f"{'═' * 50}")
+
+        segments, info = transcribe_audio(model, audio_path, language)
+        if segments is None:
+            print(f"  ⚠  Skipping {basename}")
+            failed += 1
+            continue
+
+        # Format output
+        if out_format == "json":
+            result = format_json(segments, info)
+        else:
+            formatter = {"text": format_text, "srt": format_srt,
+                         "vtt": format_vtt}.get(out_format, format_text)
+            result = formatter(segments)
+
+        # Save transcript
+        out_path = os.path.join(OUTPUT_DIR, name_no_ext + out_ext)
+        with open(out_path, "w") as f:
+            f.write(result)
+        print(f"  💾 Saved: output/{name_no_ext}{out_ext}")
+
+        # Move original to processed
+        dest = os.path.join(PROCESSED_DIR, basename)
+        # Handle duplicate filenames
+        if os.path.exists(dest):
+            base, ext = os.path.splitext(basename)
+            counter = 1
+            while os.path.exists(dest):
+                dest = os.path.join(PROCESSED_DIR, f"{base}_{counter}{ext}")
+                counter += 1
+        shutil.move(audio_path, dest)
+        print(f"  📦 Moved:  processed/{os.path.basename(dest)}")
+        succeeded += 1
+
+    print(f"\n{'═' * 50}")
+    print(f"  ✅ Done!  {succeeded} transcribed", end="")
+    if failed:
+        print(f", {failed} failed", end="")
+    print(f"\n  📂 Transcripts in: {OUTPUT_DIR}/")
+    print(f"{'═' * 50}\n")
+
+
 # ── Interactive mode ────────────────────────────────────────────────────────
 
 def interactive_mode(model, model_name):
@@ -286,7 +376,13 @@ def interactive_mode(model, model_name):
     print("║     🎧  WHISPER STT — INTERACTIVE MODE  🎧    ║")
     print("╚══════════════════════════════════════════════╝")
     print(f"\n  Model: {model_name}  |  Language: {'auto' if not language else language}  |  Format: {output_format}")
+    # Show inbox count on launch
+    inbox_files = scan_inbox()
+    if inbox_files:
+        print(f"\n  📬 {len(inbox_files)} file(s) waiting in inbox — type /inbox to process")
+
     print("\n  Drop a file path or use a command:")
+    print("    /inbox             — transcribe all files in inbox/")
     print("    /model <name>      — change model (e.g. /model medium)")
     print("    /lang <code>       — set language (e.g. /lang ja), 'auto' to detect")
     print("    /format <fmt>      — set output: text, srt, vtt, json")
@@ -360,6 +456,8 @@ def interactive_mode(model, model_name):
                         print(result)
                         print(f"{'─' * 50}")
                     os.unlink(tmp_path)
+            elif cmd == "/inbox":
+                process_inbox(model, language, output_format)
             elif cmd == "/models":
                 print_models()
             else:
@@ -439,6 +537,8 @@ Examples:
                         help="List all available models")
     parser.add_argument("--record", type=int, nargs="?", const=10, default=None,
                         help="Record from microphone (optional: seconds, default 10)")
+    parser.add_argument("--inbox", action="store_true",
+                        help="Transcribe all files in inbox/, save to output/")
     parser.add_argument("--no-print", action="store_true",
                         help="Don't print transcript to terminal")
 
@@ -461,6 +561,11 @@ Examples:
         out_format = detect_format_from_path(args.output)
     if not out_format:
         out_format = "text"
+
+    # Process inbox
+    if args.inbox:
+        process_inbox(model, args.language, out_format)
+        return
 
     # Record from mic
     if args.record is not None:
