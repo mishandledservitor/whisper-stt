@@ -2,7 +2,7 @@
 
 > Local speech-to-text using [Faster-Whisper](https://github.com/SYSTRAN/faster-whisper) (CTranslate2). No cloud, no API keys, no PyTorch.
 
-**Version 1.1.0** | [Changelog](CHANGELOG.md) | Part of [VoxBox](https://github.com/mishandledservitor/voxbox)
+**Version 1.1.1** | [Changelog](CHANGELOG.md) | [License](LICENSE) | Part of [VoxBox](https://github.com/mishandledservitor/voxbox)
 
 ---
 
@@ -26,6 +26,7 @@
 - [Troubleshooting](#troubleshooting)
 - [Uninstall](#uninstall)
 - [File Manifest](#file-manifest)
+- [License](#license)
 
 ---
 
@@ -448,3 +449,10 @@ All prompts default to no.
 | `README.md` | This documentation | — |
 | `CHANGELOG.md` | Version history | — |
 | `VERSION` | Current version number | — |
+| `LICENSE` | MIT license + upstream attribution | — |
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE) for the full text and upstream attribution for Whisper, Faster-Whisper, CTranslate2, and PyAV.

@@ -1,9 +1,29 @@
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+
+# Build artifacts
 venv/
 whisper
 whisper_output*
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+build/
+dist/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Local environment
+.env
+.envrc
 
 # Drop-folder contents (keep dirs, ignore files)
 inbox/*

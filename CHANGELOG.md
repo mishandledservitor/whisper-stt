@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions follow 
 
 ---
 
+## [1.1.1] — 2026-04-16
+
+### Added
+- LICENSE file (MIT) with upstream attribution for Whisper, Faster-Whisper, CTranslate2, PyAV
+
+### Changed
+- `.gitignore` expanded to cover IDE/editor files (`.vscode/`, `.idea/`, swap files), local env files (`.env`, `.envrc`), and Python build artifacts
+
 ## [1.1.0] — 2026-04-03
 
 ### Added
